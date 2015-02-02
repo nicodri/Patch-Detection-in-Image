@@ -32,3 +32,11 @@ mu_eye.append(np.mean(eye))
 cov_eye=np.cov(input)
 
 
+#--------set the summed area table
+#sum to compute mu
+I_sum=np.zeros((img.shape[0],img.shape[1],3))
+I_sum[0,0,:]=[0,0,img[0,0]]
+for i in range(img.shape[0]):
+    for j in range(img.shape[1]):
+        I_sum[]
+
