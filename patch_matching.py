@@ -47,3 +47,21 @@ for i in range(img.shape[0]):
         X=[[i,j,img[i,j]]]
         temp=np.transpose(X)*X
         I_cov[i,j,:,:]=temp+(I_cov[i-1,j,:,:] if i>0 else 0)+(I_cov[i,j-1,:,:] if j>0 else 0)-(I_cov[i-1,j-1,:,:] if i>0 and j>0 else 0)
+
+
+#---------Patch Matching
+#Naive approach
+input_img=np.zeros((3,eye.shape[0]*eye.shape[1]))
+m=0
+for i in range(img.shape[0]):
+    for j in range(img.shape[1]):
+        input_img[0,m]=i
+        input_img[1,m]=j
+        input_img[2,m]=img[i,j]
+        m+=1
+        
+i0=eye.shape[0]
+i1=eye.shape[1]
+for i in range(img.shape[0]-eye.shape[0]):
+    for j in range(img.shape[1]-eye.shape[1]):
+        mu_temp=
