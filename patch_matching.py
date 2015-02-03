@@ -11,6 +11,10 @@ import numpy as np
 img = misc.imread('test.png',1)
 eye=misc.imread('eye.png',1)
 
+i0=eye.shape[0]
+j0=eye.shape[1]
+eye_size=i0*j0
+
 #-------------------Estimate the patch
 #set the list of the data input
 input=np.zeros((3,eye.shape[0]*eye.shape[1]))
@@ -29,7 +33,14 @@ mu_eye[1,0]=eye.shape[1]/2
 mu_eye[2,0]=np.mean(eye)
 
 #covariance
-cov_eye=np.cov(input)
+cov_eye=np.zeros((3,3))        
+for i in range(i0):
+    for j in range(j0):
+        X=np.array([[i],[j],[eye[i,j]]])
+        cov_eye+=np.dot((X-mu_eye),np.transpose(X-mu_eye))
+        print "cov on x = "+str(cov_eye[0,0])
+cov_eye=cov_eye/(eye_size)
+cov_eye2=np.cov(input)
 
 
 #--------set the summed area table
@@ -55,26 +66,31 @@ print "Pre-processing completed"
 #Naive approach
 
 print "Naive Patch-Matching begins"    
-i0=eye.shape[0]
-j0=eye.shape[1]
-eye_size=i0*j0
+
 KL=np.zeros((img.shape[0]-i0,img.shape[1]-j0))
 for i in range(img.shape[0]-i0):
+    print "KL line "+str(i)
     for j in range(img.shape[1]-j0):
         #patch analyzed: i to i+i0 and j to j+j0
         #mu computation
         mu_temp=np.zeros((3,1))
         mu_temp[0,0]=i+i0/2
         mu_temp[1,0]=j+j0/2
-        mu_temp[2,0]=(1/eye_size)*(I_sum[i+i0,j+j0]-I_sum[i,j+j0]-I_sum[i+i0,j]+I_sum[i,j])#compute mu with the summed area table
+        mu_temp[2,0]=(I_sum[i+i0,j+j0]-I_sum[i,j+j0]-I_sum[i+i0,j]+I_sum[i,j])/(eye_size)#compute mu with the summed area table
         #cov NAIVE computation
         cov_temp=np.zeros((3,3))        
         for k in range(i0):
             for l in range(j0):
-                X=[[i,j,img[i,j]]]
-                cov_temp+=np.transpose(X-mu_temp)*(X-mu_temp)
-        cov_temp=(1/eye_size)*cov_temp
+                X=np.array([[i+k],[j+l],[img[i+k,j+l]]])
+                cov_temp+=np.dot((X-mu_temp),np.transpose(X-mu_temp))
+        cov_temp=cov_temp/(eye_size)
         
         #KL symetrized computation
-        print "KL computation for patch with left corner at ("+str(i)+","+str(j)+")"
-        KL[i,j]=0,25*(np.trace(np.linalg.pinv(cov_temp)*cov_eye)+np.trace(np.linalg.pinv(cov_eye)*cov_temp)+np.transpose(mu_temp-mu_eye)*np.linalg.pinv(cov_temp)*(mu_temp-mu_eye)+np.transpose(mu_eye-mu_temp)*np.linalg.pinv(cov_eye)*(mu_eye-mu_temp)-6)
+        
+        KL[i,j]=0.25*(np.trace(np.dot(np.linalg.pinv(cov_temp),cov_eye))+np.trace(np.dot(np.linalg.pinv(cov_eye),cov_temp))+np.sum(np.dot(np.dot(np.transpose(mu_temp-mu_eye),np.linalg.pinv(cov_temp)),(mu_temp-mu_eye)))+np.sum(np.dot(np.dot(np.transpose(mu_eye-mu_temp),np.linalg.pinv(cov_eye)),(mu_eye-mu_temp)))-6)
+        
+        
+for i in range(KL.shape[0]):
+    for j in range(KL.shape[1]):
+        if KL[i,j]<10:
+            print(KL[i,j],i,j)
