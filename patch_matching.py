@@ -23,10 +23,10 @@ for i in range(eye.shape[0]):
         c+=1
         
 #mean
-mu_eye=[]
-mu_eye.append(eye.shape[0]/2)
-mu_eye.append(eye.shape[1]/2)
-mu_eye.append(np.mean(eye))
+mu_eye=np.zeros((3,1))
+mu_eye[0,0]=eye.shape[0]/2
+mu_eye[1,0]=eye.shape[1]/2
+mu_eye[2,0]=np.mean(eye)
 
 #covariance
 cov_eye=np.cov(input)
@@ -48,20 +48,33 @@ for i in range(img.shape[0]):
         temp=np.transpose(X)*X
         I_cov[i,j,:,:]=temp+(I_cov[i-1,j,:,:] if i>0 else 0)+(I_cov[i,j-1,:,:] if j>0 else 0)-(I_cov[i-1,j-1,:,:] if i>0 and j>0 else 0)
 
+print "Pre-processing completed"
 
 #---------Patch Matching
+
 #Naive approach
-input_img=np.zeros((3,eye.shape[0]*eye.shape[1]))
-m=0
-for i in range(img.shape[0]):
-    for j in range(img.shape[1]):
-        input_img[0,m]=i
-        input_img[1,m]=j
-        input_img[2,m]=img[i,j]
-        m+=1
-        
+
+print "Naive Patch-Matching begins"    
 i0=eye.shape[0]
-i1=eye.shape[1]
-for i in range(img.shape[0]-eye.shape[0]):
-    for j in range(img.shape[1]-eye.shape[1]):
-        mu_temp=
+j0=eye.shape[1]
+eye_size=i0*j0
+KL=np.zeros((img.shape[0]-i0,img.shape[1]-j0))
+for i in range(img.shape[0]-i0):
+    for j in range(img.shape[1]-j0):
+        #patch analyzed: i to i+i0 and j to j+j0
+        #mu computation
+        mu_temp=np.zeros((3,1))
+        mu_temp[0,0]=i+i0/2
+        mu_temp[1,0]=j+j0/2
+        mu_temp[2,0]=(1/eye_size)*(I_sum[i+i0,j+j0]-I_sum[i,j+j0]-I_sum[i+i0,j]+I_sum[i,j])#compute mu with the summed area table
+        #cov NAIVE computation
+        cov_temp=np.zeros((3,3))        
+        for k in range(i0):
+            for l in range(j0):
+                X=[[i,j,img[i,j]]]
+                cov_temp+=np.transpose(X-mu_temp)*(X-mu_temp)
+        cov_temp=(1/eye_size)*cov_temp
+        
+        #KL symetrized computation
+        print "KL computation for patch with left corner at ("+str(i)+","+str(j)+")"
+        KL[i,j]=0,25*(np.trace(np.linalg.pinv(cov_temp)*cov_eye)+np.trace(np.linalg.pinv(cov_eye)*cov_temp)+np.transpose(mu_temp-mu_eye)*np.linalg.pinv(cov_temp)*(mu_temp-mu_eye)+np.transpose(mu_eye-mu_temp)*np.linalg.pinv(cov_eye)*(mu_eye-mu_temp)-6)
