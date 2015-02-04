@@ -8,7 +8,7 @@ from scipy import misc
 import numpy as np
 
 #load images in fray-scale layer
-img = misc.imread('test.png',1)
+img = misc.imread('test2.png',1)
 eye=misc.imread('eye.png',1)
 
 i0=eye.shape[0]
@@ -92,5 +92,5 @@ for i in range(img.shape[0]-i0):
         
 for i in range(KL.shape[0]):
     for j in range(KL.shape[1]):
-        if KL[i,j]<10:
+        if KL[i,j]<1:
             print(KL[i,j],i,j)
