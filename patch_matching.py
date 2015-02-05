@@ -8,7 +8,7 @@ from scipy import misc
 import numpy as np
 
 #load images in fray-scale layer
-img = misc.imread('test2.png',1)
+img = misc.imread('eye.png',1)
 eye=misc.imread('eye.png',1)
 
 i0=eye.shape[0]
@@ -38,8 +38,7 @@ for i in range(i0):
     for j in range(j0):
         X=np.array([[i],[j],[eye[i,j]]])
         cov_eye+=np.dot((X-mu_eye),np.transpose(X-mu_eye))
-        print "cov on x = "+str(cov_eye[0,0])
-cov_eye=cov_eye/(eye_size)
+cov_eye=cov_eye/(eye_size-1)
 cov_eye2=np.cov(input)
 
 
@@ -67,7 +66,10 @@ print "Pre-processing completed"
 
 print "Naive Patch-Matching begins"    
 
-KL=np.zeros((img.shape[0]-i0,img.shape[1]-j0))
+#mu_tot=np.zeros((img.shape[0]-i0,img.shape[1]-j0,3))
+#cov_tot=np.zeros((img.shape[0]-i0,img.shape[1]-j0,3,3))
+
+KL=np.zeros((img.shape[0]-i0+1,img.shape[1]-j0+1))
 for i in range(img.shape[0]-i0):
     print "KL line "+str(i)
     for j in range(img.shape[1]-j0):
@@ -76,14 +78,14 @@ for i in range(img.shape[0]-i0):
         mu_temp=np.zeros((3,1))
         mu_temp[0,0]=i+i0/2
         mu_temp[1,0]=j+j0/2
-        mu_temp[2,0]=(I_sum[i+i0,j+j0]-I_sum[i,j+j0]-I_sum[i+i0,j]+I_sum[i,j])/(eye_size)#compute mu with the summed area table
+        mu_temp[2,0]=(I_sum[i+i0,j+j0]-I_sum[i,j+j0]-I_sum[i+i0,j]+I_sum[i,j])/(eye_size-1)#compute mu with the summed area table
         #cov NAIVE computation
         cov_temp=np.zeros((3,3))        
         for k in range(i0):
             for l in range(j0):
                 X=np.array([[i+k],[j+l],[img[i+k,j+l]]])
                 cov_temp+=np.dot((X-mu_temp),np.transpose(X-mu_temp))
-        cov_temp=cov_temp/(eye_size)
+        cov_temp=cov_temp/(eye_size-1)
         
         #KL symetrized computation
         
