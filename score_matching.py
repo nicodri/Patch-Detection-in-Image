@@ -26,14 +26,14 @@ def pdfexp(z):
 def pdfexpm(z,theta):
     return exp(theta[0]*z+theta[1]*z**2+theta[2]*z**3)
    
-a_true=5
+a_true=9
 #normal law
 def pdfn(z):
     return exp((-1/2)*(z-a_true)**2)
     
 
 #Metropolis unidimensional    
-n = 10000000
+n = 1000000
 alpha = 1
 z = 0.
 vec=[]
@@ -41,7 +41,7 @@ vec.append(z)
 innov = uniform(-alpha,alpha,n) #random inovation, uniform proposal distribution
 for i in xrange(1,n):
     can = z + innov[i] #candidate
-    aprob = min([1.,pdfexp(can)/pdfexp(z)]) #acceptance probability
+    aprob = min([1.,pdfn(can)/pdfn(z)]) #acceptance probability
     u = uniform(0,1)
     if u < aprob:
         z = can
@@ -72,14 +72,6 @@ def obj(theta):
         L=2*theta_true[1]+6*theta*i+0.5*(theta_true[0]+2*theta_true[1]*i+3*theta*i**2)**2
     return L/len(vec) # objective function to minimize
 
-#plot
-t=np.arange(-100,1000,0.5)
-plot(t,objtest(t))
-
-#score matching
-res = minimize_scalar(objtest)
-print(res.x)
-
 # -------------------test obj function for normal law
 def objtest(a):
     L=0
@@ -92,7 +84,7 @@ plot(t,objtest(t))
   
 #score matching  
 res = minimize_scalar(objtest)
-print(res.x)
+print "The score matching estimator provide a = "+str(res.x)+" for the true parameter a_true = "+str(a_true)
 
 res = minimize(obj, theta0,method='BFGS',options={'disp': True})
 #
