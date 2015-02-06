@@ -16,11 +16,11 @@ from sympy import symbols
 x = symbols('x')
 
 # Choose the "true" parameters.
-theta_true=[30,90,150]
+theta_true=[-30,90,-150]
 
 #pdf non-normalized for the data
 def pdfexp(z):
-    return exp(theta_true[0]*z+theta_true[1]*z**2+theta_true[2]*z**3)
+    return exp(theta_true[0]*z+theta_true[1]*(z**2)+theta_true[2]*(z**3))
 
 #pdf model
 def pdfexpm(z,theta):
@@ -41,7 +41,7 @@ vec.append(z)
 innov = uniform(-alpha,alpha,n) #random inovation, uniform proposal distribution
 for i in xrange(1,n):
     can = z + innov[i] #candidate
-    aprob = min([1.,pdfn(can)/pdfn(z)]) #acceptance probability
+    aprob = min([1.,pdfexp(can)/pdfexp(z)]) #acceptance probability
     u = uniform(0,1)
     if u < aprob:
         z = can
@@ -69,26 +69,36 @@ show()
 def obj(theta):
     L=0
     for i in vec:
-        L=2*theta_true[1]+6*theta*i+0.5*(theta_true[0]+2*theta_true[1]*i+3*theta*i**2)**2
+        L+=2*theta+6*theta_true[2]*i+0.5*(theta_true[0]+2*theta*i+3*theta_true[2]*(i**2))**2
     return L/len(vec) # objective function to minimize
 
-# -------------------test obj function for normal law
-def objtest(a):
-    L=0
-    for i in range(len(vec)):
-       L=L+(-1)+0.5*(a-vec[i])**2 
-    return L/len(vec)
-#plot
-t=np.arange(-100,1000,0.5)
-plot(t,objtest(t))
-  
-#score matching  
-res = minimize_scalar(objtest)
-print "The score matching estimator provide a = "+str(res.x)+" for the true parameter a_true = "+str(a_true)
+#==============================================================================
+# # -------------------test obj function for normal law
+# def objtest(a):
+#     L=0
+#     for i in range(len(vec)):
+#        L=L+(-1)+0.5*(a-vec[i])**2 
+#     return L/len(vec)
+# #plot
+# t=np.arange(-100,1000,0.5)
+# plot(t,objtest(t))
+#   
+# #score matching  
+# res = minimize_scalar(objtest)
+# print "The score matching estimator provide a = "+str(res.x)+" for the true parameter a_true = "+str(a_true)
+#==============================================================================
 
-res = minimize(obj, theta0,method='BFGS',options={'disp': True})
-#
-print(res.x)
+#exp family
+t=np.arange(-200,1000,0.5)
+plot(t,obj(t))
+
+res = minimize_scalar(obj)
+print "The score matching estimator provide theta = "+str(res.x)+" for the true parameter theta_true = "+str(theta_true[1])
+
+
+#res = minimize(obj, theta0,method='BFGS',options={'disp': True})
+##
+#print(res.x)
 
 #def J(theta):
 #    N=len(vec)

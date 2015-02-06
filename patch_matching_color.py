@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jan 30 14:13:01 2015
+Created on Thu Jan 22 10:59:11 2015
 
 @author: drizardnicolas
 """
+
 from scipy import misc
 import numpy as np
 import matplotlib.pyplot as plt
 import math 
 
-#load images in fray-scale layer
+#load images in fray-scale layer in RGB
 #    eye: reference patch
 #    img: image where you want to find the patch eye
 #    patchs_number: number of occurences of the patch eye in the image
 
-img = misc.imread('test_famille.jpg',1)
-eye=misc.imread('eye_famille.png',1)
+img = misc.imread('Ballons_test.jpg') #size (i1,j1,3) 3 for RGB composante
+eye=misc.imread('Ballons_patchtest.png') #size (i0,j0,3)
 #data parameters
 i0=eye.shape[0]
 j0=eye.shape[1]
@@ -25,38 +26,54 @@ eye_size=i0*j0
 i1=img.shape[0]
 j1=img.shape[1]
 
-patchs_number=5
+patchs_number=2
 #----------------------------------------Estimate the patch
         
-#mean
-mu_eye=np.zeros((3,1))
-mu_eye[0,0]=eye.shape[0]/2
-mu_eye[1,0]=eye.shape[1]/2
-mu_eye[2,0]=np.mean(eye)
+#Compute the mean of the patch 
+mu_eye=np.array([[np.mean(eye[:,:,i])] for i in range(3)]) #size (3,1)
 
-#covariance
-cov_eye=np.zeros((3,3))        
+#Compute the covariance matrix of the patch eye
+cov_eye=np.zeros((3,3))
 for i in range(i0):
     for j in range(j0):
-        X=np.array([[i],[j],[eye[i,j]]])
-        cov_eye+=np.dot((X-mu_eye),np.transpose(X-mu_eye))
-cov_eye=cov_eye/(eye_size-1)
+        X=np.array([[eye[i,j,k]] for k in range(3)])
+        #cov_eye+=np.dot((X-mu_eye),np.transpose(X-mu_eye))
+        cov_eye+=np.dot(X,np.transpose(X))
+cov_eye=cov_eye/(eye_size-1)-(eye_size/(eye_size-1))*np.dot(mu_eye,np.transpose(mu_eye))
 
 
 #----------------------------------set the summed area table
 
 #sum to compute mu
-I_sum=np.zeros((i1,j1))
+I_sum=np.zeros((i1,j1,3))
 for i in range(i1):
     for j in range(j1):
-        I_sum[i,j]=img[i,j]+(I_sum[i-1,j] if i>0 else 0)+(I_sum[i,j-1] if j>0 else 0)-(I_sum[i-1,j-1] if i>0 and j>0 else 0)
+        I_sum[i,j,:]=img[i,j,:]+(I_sum[i-1,j] if i>0 else 0)+(I_sum[i,j-1] if j>0 else 0)-(I_sum[i-1,j-1] if i>0 and j>0 else 0)
+
+mu_test=np.zeros((3,1))
+I_sumtest=np.zeros((i0,j0,3))
+for i in range(i0):
+    for j in range(j0):
+        I_sumtest[i,j,:]=eye[i,j,:]+(I_sumtest[i-1,j] if i>0 else 0)+(I_sumtest[i,j-1] if j>0 else 0)-(I_sumtest[i-1,j-1] if i>0 and j>0 else 0)
+mu_test[:,0]=I_sumtest[i0-1,j0-1,:]
+mu_test=mu_test/(eye_size)
 
 #sum to compute cov
 I_square=np.zeros((i1,j1,3,3))
 for i in range(i1):
     for j in range(j1):
-        X=np.array([[i],[j],[img[i,j]]])
+        X=np.array([[img[i,j,k]] for k in range(3)])
         I_square[i,j,:,:]=np.dot(X,np.transpose(X))+(I_square[i-1,j,:,:] if i>0 else 0)+(I_square[i,j-1,:,:] if j>0 else 0)-(I_square[i-1,j-1,:,:] if i>0 and j>0 else 0)
+
+cov_test=np.zeros((3,3))
+I_squaretest=np.zeros((i0,j0,3,3))
+for i in range(i0):
+    for j in range(j0):
+        X=np.array([[eye[i,j,k]] for k in range(3)])
+        I_squaretest[i,j,:,:]=np.dot(X,np.transpose(X))+(I_squaretest[i-1,j,:,:] if i>0 else 0)+(I_squaretest[i,j-1,:,:] if j>0 else 0)-(I_squaretest[i-1,j-1,:,:] if i>0 and j>0 else 0)
+        
+cov_test=I_squaretest[i0-1,j0-1,:,:]
+cov_test=cov_test/(eye_size)-np.dot(mu_test,np.transpose(mu_test))
 
 #==============================================================================
 # I_cov=np.zeros((img.shape[0],img.shape[1],3,3))
@@ -72,60 +89,47 @@ print "Pre-processing completed"
 
 #---------Patch Matching
 
-#Naive approach
 
-print "Naive Patch-Matching begins"    
+print "Patch-Matching begins"    
 
 #-----------------------------set the KL-table
 KL=np.zeros((img.shape[0]-i0+1,img.shape[1]-j0+1))
 mu_temp=np.zeros((3,1))
-mu_temp[0,0]=i0/2
-mu_temp[1,0]=j0/2
-KL_min=np.array([[0],[0],[1000]])
 for i in range(img.shape[0]-i0 +1):
-    print "KL line "+str(i)
+    print "Computing KL line "+str(i)
     for j in range(img.shape[1]-j0 +1):
         #patch analyzed: i to i+i0-1 and j to j+j0-1
-        #mu computation
-        sum_int=I_sum[i+i0-1,j+j0-1]-(I_sum[i-1,j+j0-1] if i>0 else 0)-(I_sum[i+i0-1,j-1] if j>0 else 0)+(I_sum[i-1,j-1] if i>0 and j>0 else 0)
-        mu_temp[2,0]=(sum_int)/(eye_size)#compute mu with the summed area table
+        #mu computation with the summed area table
+        mu_temp=I_sum[i+i0-1,j+j0-1,:]-(I_sum[i-1,j+j0-1,:] if i>0 else 0)-(I_sum[i+i0-1,j-1,:] if j>0 else 0)+(I_sum[i-1,j-1,:] if i>0 and j>0 else 0)
+        mu_temp=mu_temp/(eye_size)
         
-        #cov NAIVE computation
+        #cov computation with the area table
+#        cov_temp=I_square[i+i0-1,j+j0-1,:,:]-(I_square[i-1,j+j0-1,:,:] if i>0 else 0)-(I_square[i+i0-1,j-1,:,:] if j>0 else 0)+(I_square[i-1,j-1,:,:] if i>0 and j>0 else 0)
+#        cov_temp=cov_temp/(eye_size)+np.dot(mu_temp,np.transpose(mu_temp))
+        
         cov_temp=np.zeros((3,3))        
         for k in range(i0):
             for l in range(j0):
-                X=np.array([[k],[l],[img[i+k,j+l]]])
+                X=np.array([[img[i,j,k]] for k in range(3)])
                 cov_temp+=np.dot((X-mu_temp),np.transpose(X-mu_temp))
         cov_temp=cov_temp/(eye_size-1)
-        #Debug zone
-        #print "true cov_temp is "+str(cov_tempold)        
         
-        #cov computation with summed area table
-#        cov_temp=np.zeros((3,3))
-#        sum_square=np.zeros((3,3))
-#        
-#        sum_x=0.5*j0*i0*i0
-#        sum_y=0.5*i0*j0*j0
-#        sum_square=I_square[i+i0-1,j+j0-1,:,:]-(I_square[i-1,j+j0-1,:,:] if i>0 else 0)-(I_square[i+i0-1,j-1,:,:] if j>0 else 0)+(I_square[i-1,j-1,:,:] if i>0 and j>0 else 0)
-#        
-#        X=np.array([[sum_x],[sum_y],[sum_int]])
-#        
-#        cov_temp=sum_square+np.dot(mu_temp,np.transpose(mu_temp))-np.dot(mu_temp,np.transpose(X))-np.dot(X,np.transpose(mu_temp))
-#        cov_temp=cov_temp/(eye_size-1)
         #Debug zone
-        #print "new cov_temp is "+str(cov_temp)  
+#        print "Old cov_temp is "+str(cov_tempold)
+#        print "New cov_temp is "+str(cov_temp)
         
         #KL symetrized computation
-        #KL[i,j]=0.25*(np.trace(np.dot(np.linalg.pinv(cov_temp),cov_eye))+np.trace(np.dot(np.linalg.pinv(cov_eye),cov_temp))+np.sum(np.dot(np.dot(np.transpose(mu_temp-mu_eye),np.linalg.pinv(cov_temp)),(mu_temp-mu_eye)))+np.sum(np.dot(np.dot(np.transpose(mu_eye-mu_temp),np.linalg.pinv(cov_eye)),(mu_eye-mu_temp)))-6)
+        KL[i,j]=0.25*(np.trace(np.dot(np.linalg.pinv(cov_temp),cov_eye))+np.trace(np.dot(np.linalg.pinv(cov_eye),cov_temp))+np.sum(np.dot(np.dot(np.transpose(mu_temp-mu_eye),np.linalg.pinv(cov_temp)),(mu_temp-mu_eye)))+np.sum(np.dot(np.dot(np.transpose(mu_eye-mu_temp),np.linalg.pinv(cov_eye)),(mu_eye-mu_temp)))-6)
 
         #Bhattacharyya distance
-        sigma=0.5*(cov_temp+cov_eye)
-        KL[i,j]=0.125*(np.dot(np.dot(np.transpose(mu_eye-mu_temp),np.linalg.pinv(sigma)),(mu_eye-mu_temp))+0.5*math.log(np.linalg.det(sigma)/(math.sqrt(np.linalg.det(cov_temp)*np.linalg.det(cov_eye)))))
+#        sigma=0.5*(cov_temp+cov_eye)
+#        KL[i,j]=0.125*(np.dot(np.dot(np.transpose(mu_eye-mu_temp),np.linalg.pinv(sigma)),(mu_eye-mu_temp))+0.5*math.log(np.linalg.det(sigma)/(math.sqrt(np.linalg.det(cov_temp)*np.linalg.det(cov_eye)))))
         
 print "Naive Patch-Matching completed"
 
 #------------Find the top matchs_number patch matching the eye patch in the img based on the KL table
-#check if the patch with left corner (i_test,j_test) is not to close of the patch with left corner (i_ref,j_ref) with the precision precision
+
+#Fonction to check if the patch with left corner (i_test,j_test) is not to close of the patch with left corner (i_ref,j_ref) with the precision precision
 def around(i_test,j_test,i_ref,j_ref,precision):
     i_ret=False
     j_ret=False
@@ -171,7 +175,6 @@ for i in range(i1-i0+1):
                     KL_min[0,k]=i
                     KL_min[1,k]=j
                     KL_min[2,k]=KL[i,j]
-                    print str((i,j,KL_min))
                 break
 
 #Display the result
@@ -181,15 +184,15 @@ for k in range (patchs_number):
     print "Patch found on ("+str(i_min)+","+str(j_min)+") with the KL value "+str(KL_min[2,k])
     #Patch display
     for i in range(i0):
-        img[i_min+i,j_min]=255
-        img[i_min+i,j_min+j0-1]=255
+        img[i_min+i,j_min,:]=np.array([255,255,255])
+        img[i_min+i,j_min+j0-1]=np.array([255,255,255])
     for j in range(j0):
-        img[i_min,j_min+j]=255
-        img[i_min+i0-1,j_min+j]=255
+        img[i_min,j_min+j]=np.array([255,255,255])
+        img[i_min+i0-1,j_min+j]=np.array([255,255,255])
 
-plt.figure(figsize=(3,3))
+plt.figure(figsize=(6,6))
 plt.axes([0, 0, 1, 1])
-plt.imshow(img, cmap=plt.cm.gray)
+plt.imshow(img)
 plt.axis('off')
 
 plt.show()
