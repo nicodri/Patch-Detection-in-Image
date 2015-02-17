@@ -44,8 +44,8 @@ print "Pre-processing begins"
 #Compute the mean of the patch
 mu_eye=np.zeros((5,1))      
 mu_eye[0:3,:]=np.array([[np.mean(eye[:,:,i])] for i in range(3)]) #size (3,1)
-mu_eye[3,0]=i0/2
-mu_eye[4,0]=j0/2
+mu_eye[3,0]=(i0-1)/2.0
+mu_eye[4,0]=(j0-1)/2.0
 
 #Compute the covariance matrix of the patch eye
 X=np.zeros((5,1))
@@ -56,7 +56,7 @@ for i in range(i0):
         X[3,0]=i        
         X[4,0]=j
         cov_eye+=np.dot(X,np.transpose(X))
-cov_eye=(cov_eye-eye_size*np.dot(mu_eye,np.transpose(mu_eye)))/(eye_size-1)
+cov_eye=(cov_eye-eye_size*np.dot(mu_eye,np.transpose(mu_eye)))/(eye_size-1.0)
 
 #----------------------------------set the summed area table
 
@@ -89,8 +89,8 @@ KL=np.zeros((i1-i0+1,j1-j0+1,2))
 mu_temp=np.zeros((5,1))
 
 #only without zoom
-mu_temp[3,0]=i0/2
-mu_temp[4,0]=j0/2
+mu_temp[3,0]=(i0-1)/2.0
+mu_temp[4,0]=(j0-1)/2.0
 
 for i in range(i1-i0 +1):
     print "Computing KL line "+str(i)
@@ -122,11 +122,10 @@ for i in range(i1-i0 +1):
             cov_temp[4,4]=cov_temp[4,4]-eye_size*j**2-2*eye_size*j*mu_temp[4,0]
             cov_temp[3,4]=mu_temp[3,0]*mu_temp[4,0]*i0*j0
             cov_temp[4,3]=mu_temp[3,0]*mu_temp[4,0]*i0*j0
-            #cov_temp[4,3]=cov_temp[4,3]-i*j*eye_size-i*mu_temp[4,0]*eye_size-j*mu_temp[3,0]*eye_size
             
             cov_temp=(cov_temp-temp_size*np.dot(mu_temp,np.transpose(mu_temp)))/(temp_size-1)
-            #print "New cov_temp is "+str(cov_temp)
-           
+            #print i," ",j," cov_temp[3,4] is "+str(cov_temp[3,4])
+            
             #naive cov computation
     #        cov_temp=np.zeros((3,3))         
     #        for k in range(i0):
@@ -154,7 +153,6 @@ for i in range(i1-i0 +1):
                 #print "Change for zoom "+str(z)+" with KL value "+str(KL_temp)
                 KL[i,j,0]=KL_temp
                 KL[i,j,1]=z
-            
 print "Patch-Matching completed"
 
 #------------Find the top matchs_number patch matching the eye patch in the img based on the KL table

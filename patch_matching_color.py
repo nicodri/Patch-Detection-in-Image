@@ -17,8 +17,8 @@ import math
 #    patchs_number: number of occurences of the patch eye in the image
 #    zoom: define the size range of the patch analized in img
     
-img = misc.imread('img/Ballons_test.jpg') #size (i1,j1,3) 3 for RGB composante
-eye=misc.imread('img/Ballons_patchtest.png') #size (i0,j0,3)
+img = misc.imread('img/family_color.jpg') #size (i1,j1,3) 3 for RGB composante
+eye=misc.imread('img/family_color_patch2.png') #size (i0,j0,3)
 #data parameters
 
 i0=eye.shape[0]
@@ -29,7 +29,7 @@ eye_size=i0*j0
 i1=img.shape[0]
 j1=img.shape[1]
 
-patchs_number=5
+patchs_number=4
 
 #Zoom parameters
 zmin=1
