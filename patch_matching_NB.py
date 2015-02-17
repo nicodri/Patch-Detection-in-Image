@@ -7,7 +7,8 @@ Created on Fri Jan 30 14:13:01 2015
 from scipy import misc
 import numpy as np
 import matplotlib.pyplot as plt
-import math 
+from around import around
+import math
 
 #load images in fray-scale layer in grey 
 #    eye: reference patch
@@ -100,17 +101,6 @@ for i in range(i1-i0 +1):
 print "Naive Patch-Matching completed"
 
 #------------Find the top matchs_number patch matching the eye patch in the img based on the KL table
-#check if the patch with left corner (i_test,j_test) is not to close of the patch with left corner (i_ref,j_ref) with the precision precision
-def around(i_test,j_test,i_ref,j_ref,i_precision,j_precision):
-    i_ret=False
-    j_ret=False
-    for k in range(i_precision):
-        if i_test==i_ref+k or i_test==i_ref-k:
-            i_ret=True
-    for k in range(j_precision):
-        if j_test==j_ref+k or j_test==j_ref-k:
-            j_ret=True
-    return i_ret*j_ret
 
 #store the top patchs_number patch maching the input eye in the image img 
 KL_min=np.zeros((3,patchs_number)) 

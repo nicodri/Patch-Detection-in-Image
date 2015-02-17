@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jan 22 10:59:11 2015
+Created on Thu Feb 12 14:00:42 2015
 
 @author: drizardnicolas
 """
+
 
 from scipy import misc
 import numpy as np
@@ -17,8 +18,8 @@ import math
 #    patchs_number: number of occurences of the patch eye in the image
 #    zoom: define the size range of the patch analized in img
     
-img = misc.imread('img/Ballons_test.jpg') #size (i1,j1,3) 3 for RGB composante
-eye=misc.imread('img/Ballons_patchtest.png') #size (i0,j0,3)
+img = misc.imread('img/family_color.jpg') #size (i1,j1,3) 3 for RGB composante
+eye=misc.imread('img/family_color_patch2.png') #size (i0,j0,3)
 #data parameters
 
 i0=eye.shape[0]
@@ -29,7 +30,7 @@ eye_size=i0*j0
 i1=img.shape[0]
 j1=img.shape[1]
 
-patchs_number=5
+patchs_number=4
 
 #Zoom parameters
 zmin=1
@@ -40,19 +41,22 @@ print "Pre-processing begins"
 #----------------------------------------Estimate the patch
       
       
-#Compute the mean of the patch 
-mu_eye=np.array([[np.mean(eye[:,:,i])] for i in range(3)]) #size (3,1)
+#Compute the mean of the patch
+mu_eye=np.zeros((5,1))      
+mu_eye[0:3,:]=np.array([[np.mean(eye[:,:,i])] for i in range(3)]) #size (3,1)
+mu_eye[3,0]=i0/2
+mu_eye[4,0]=j0/2
 
 #Compute the covariance matrix of the patch eye
-cov_eye=np.zeros((3,3))
-cov_eyeright=np.zeros((3,3))
+X=np.zeros((5,1))
+cov_eye=np.zeros((5,5))
 for i in range(i0):
     for j in range(j0):
-        X=(np.array([[eye[i,j,k]] for k in range(3)])).astype(np.float64)# type unint8 unable to store X**2
-        cov_eyeright+=np.dot((X-mu_eye),np.transpose(X-mu_eye))
+        X[0:3,:]=(np.array([[eye[i,j,k]] for k in range(3)])).astype(np.float64)# type unint8 unable to store X**2
+        X[3,0]=i        
+        X[4,0]=j
         cov_eye+=np.dot(X,np.transpose(X))
 cov_eye=(cov_eye-eye_size*np.dot(mu_eye,np.transpose(mu_eye)))/(eye_size-1)
-cov_eyeright=cov_eyeright/(eye_size-1)
 
 #----------------------------------set the summed area table
 
@@ -64,10 +68,12 @@ for i in range(i1):
 
 
 #sum to compute cov
-I_square=np.zeros((i1,j1,3,3))
+I_square=np.zeros((i1,j1,5,5))
 for i in range(i1):
     for j in range(j1):
-        X=(np.array([[img[i,j,k]] for k in range(3)])).astype(np.float64)# type unint8 unable to store X**2
+        X[0:3,:]=(np.array([[img[i,j,k]] for k in range(3)])).astype(np.float64)# type unint8 unable to store X**2
+        X[3,0]=i        
+        X[4,0]=j
         I_square[i,j,:,:]=np.dot(X,np.transpose(X))+(I_square[i-1,j,:,:] if i>0 else 0)+(I_square[i,j-1,:,:] if j>0 else 0)-(I_square[i-1,j-1,:,:] if i>0 and j>0 else 0)
 
 
@@ -80,7 +86,12 @@ print "Patch-Matching begins"
 
 #-----------------------------set the KL-table storing the least KL value for the patch with top-left corner (i,j) and zoom z=KL[i,j,1]
 KL=np.zeros((i1-i0+1,j1-j0+1,2))
-mu_temp=np.zeros((3,1))
+mu_temp=np.zeros((5,1))
+
+#only without zoom
+mu_temp[3,0]=i0/2
+mu_temp[4,0]=j0/2
+
 for i in range(i1-i0 +1):
     print "Computing KL line "+str(i)
     for j in range(j1-j0 +1):
@@ -94,14 +105,27 @@ for i in range(i1-i0 +1):
                 break
             
             #mu computation with the summed area table
-            mu_temp[:,0]=I_sum[i+i_temp-1,j+j_temp-1,:]-(I_sum[i-1,j+j_temp-1,:] if i>0 else 0)-(I_sum[i+i_temp-1,j-1,:] if j>0 else 0)+(I_sum[i-1,j-1,:] if i>0 and j>0 else 0)
-            mu_temp=mu_temp/(temp_size)
+            mu_temp[0:3,0]=I_sum[i+i_temp-1,j+j_temp-1,:]-(I_sum[i-1,j+j_temp-1,:] if i>0 else 0)-(I_sum[i+i_temp-1,j-1,:] if j>0 else 0)+(I_sum[i-1,j-1,:] if i>0 and j>0 else 0)
+            mu_temp[0:3,0]=mu_temp[0:3,0]/(temp_size)
             
             #cov computation with the area table
             
             cov_temp=I_square[i+i_temp-1,j+j_temp-1,:,:]-(I_square[i-1,j+j_temp-1,:,:] if i>0 else 0)-(I_square[i+i_temp-1,j-1,:,:] if j>0 else 0)+(I_square[i-1,j-1,:,:] if i>0 and j>0 else 0)
-            cov_temp=(cov_temp-temp_size*np.dot(mu_temp,np.transpose(mu_temp)))/(temp_size-1)
+            for r in range(3):            
+                cov_temp[3,r]=cov_temp[3,r]-i*mu_temp[r,0]*eye_size
+                cov_temp[r,3]=cov_temp[r,3]-i*mu_temp[r,0]*eye_size
+                
+                cov_temp[4,r]=cov_temp[4,r]-j*mu_temp[r,0]*eye_size
+                cov_temp[r,4]=cov_temp[r,4]-j*mu_temp[r,0]*eye_size
+
+            cov_temp[3,3]=cov_temp[3,3]-eye_size*i**2-2*eye_size*i*mu_temp[3,0]
+            cov_temp[4,4]=cov_temp[4,4]-eye_size*j**2-2*eye_size*j*mu_temp[4,0]
+            cov_temp[3,4]=mu_temp[3,0]*mu_temp[4,0]*i0*j0
+            cov_temp[4,3]=mu_temp[3,0]*mu_temp[4,0]*i0*j0
+            #cov_temp[4,3]=cov_temp[4,3]-i*j*eye_size-i*mu_temp[4,0]*eye_size-j*mu_temp[3,0]*eye_size
             
+            cov_temp=(cov_temp-temp_size*np.dot(mu_temp,np.transpose(mu_temp)))/(temp_size-1)
+            #print "New cov_temp is "+str(cov_temp)
            
             #naive cov computation
     #        cov_temp=np.zeros((3,3))         
