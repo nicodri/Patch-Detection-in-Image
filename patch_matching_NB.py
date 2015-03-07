@@ -49,13 +49,13 @@ cov_eye=cov_eye/(eye_size-1)
 
 #----------------------------------set the summed area table
 
-#sum to compute mu
+#integral image to compute mu
 I_sum=np.zeros((i1,j1))
 for i in range(i1):
     for j in range(j1):
         I_sum[i,j]=img[i,j]+(I_sum[i-1,j] if i>0 else 0)+(I_sum[i,j-1] if j>0 else 0)-(I_sum[i-1,j-1] if i>0 and j>0 else 0)
 
-#sum to compute cov
+#integral image to compute cov
 I_square=np.zeros((i1,j1,3,3))
 for i in range(i1):
     for j in range(j1):
