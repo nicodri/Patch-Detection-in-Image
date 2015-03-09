@@ -8,7 +8,12 @@ from scipy import misc
 import numpy as np
 import matplotlib.pyplot as plt
 
-def dispresult(savename,img_bis,i0,j0,KL_min,patchs_number):
+#Displaying the result and saving it with the name img_result
+#Arguments:
+#    patchs_number: number of occurences of the patch eye in the image
+#    img_result: name of the saved result
+
+def dispresult(img_result,img_bis,i0,j0,KL_min,patchs_number):
       
     for k in range (patchs_number):
         i_min=KL_min[0,k]
@@ -32,4 +37,4 @@ def dispresult(savename,img_bis,i0,j0,KL_min,patchs_number):
     
     plt.show()
     
-    misc.imsave(savename, img_bis)
+    misc.imsave(img_result, img_bis)
