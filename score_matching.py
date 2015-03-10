@@ -21,11 +21,11 @@ from mpl_toolkits.mplot3d import Axes3D
 ##==================================================================================================
 #---------------------------Law Definition
 # Choose the "true" parameters.
-theta_true=[-30,90,-150]
+theta_true=[30,-90,150,+60]
 
 #pdf non-normalized for the data
 def pdfexp(z):
-    return exp(theta_true[0]*z+theta_true[1]*(z**2)+theta_true[2]*(z**3))
+    return exp(theta_true[0]*z+theta_true[1]*(z**2)+theta_true[2]*(z**3)+theta_true[3]*(z**4))
 
 #pdf model
 def pdfexpm(z,theta):
@@ -42,7 +42,7 @@ def pdfnm(z,a):
     
 ##==================================================================================================
 #--------------------------Metropolis unidimensional    
-n = 100000
+n = 1000000
 alpha = 1
 z = 0.
 vec=[]
@@ -50,7 +50,7 @@ vec.append(z)
 innov = uniform(-alpha,alpha,n) #random inovation, uniform proposal distribution
 for i in xrange(1,n):
     can = z + innov[i] #candidate
-    aprob = min([1.,pdfn(can)/pdfn(z)]) #acceptance probability
+    aprob = min([1.,pdfexp(can)/pdfexp(z)]) #acceptance probability
     u = uniform(0,1)
     if u < aprob:
         z = can
@@ -102,13 +102,7 @@ def objtest_scalar(a):
 mu_empirical=np.mean(vec)
 var_empirical=np.var(vec)
 
-S=0
-for i in vec:
-   S+=(i-mu_empirical)**2
-S=S/len(vec)
     
-
-
 #score matching  
 #res = minimize_scalar(objtest)
 #print "The score matching estimator provide a = "+str(res.x)+" for the true parameter a_true = "+str(a_true)
@@ -120,20 +114,10 @@ plot(t,objtest_scalar(t))
 res = minimize_scalar(objtest_scalar)
 print "The score matching estimator provide theta = "+str(res.x)+" for the true parameter a = ",a_true[1]
 
-#SM for normal law xith 2 parameters
+#SM for normal law with 2 parameters
 a0=[1]
 res = minimize(objtest_scalar, a0,method='BFGS',options={'disp': True})
 print(res.x)
-
-#def J(theta):
-#    N=len(vec)
-#    J=0
-#    for k in range(N):
-#        J+=2*theta[1]+1/2*(theta[0]+2*theta[1]*vec[k])**2
-#    
-#theta0 = np.array([1,0])
-#par_sm=sciopt.fmin(J,theta0,disp=1,retall=1,xtol=0.5,ftol=0.5)
-    
 
     
     

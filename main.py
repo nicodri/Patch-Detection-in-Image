@@ -18,15 +18,15 @@ from patch_matching_color_squareparameters import patch_matching_color_squarepar
 #################TO DO:
 
 #Parameters to chose before running the program
-patchs_number=1
+patchs_number=12
 
-img_result='testres.jpg'
-img_source='img/family_color_5.jpg'
+img_result='group2_result_face_result_face.jpg'
+img_source='img/group.jpg'
 eye_source='img/family_color_4_patch_face.png'
 
 #Zoom parameters
-zmin=1
-zmax=2
+zmin=0.8
+zmax=1.2
 dz=0.2
 
 ####################################################################################################################################################################################################################################################################################################################################################################################################################
