@@ -22,13 +22,15 @@ def dispresult(img_result,img_bis,i0,j0,KL_min,patchs_number):
         i_end=int(z*i0)
         j_end=int(z*j0)
         print "Patch found on ("+str(i_min)+","+str(j_min)+") with zoom "+str(z)+" and with the KL value "+str(KL_min[2,k])
+        #color of the box to show the patch found
+        patch_color=np.array([255,50,50])
         #Patch display
         for i in range(i_end):
-            img_bis[i_min+i,j_min,:]=np.array([255,255,255])
-            img_bis[i_min+i,j_min+j_end-1]=np.array([255,255,255])
+            img_bis[i_min+i,j_min,:]=patch_color
+            img_bis[i_min+i,j_min+j_end-1]=patch_color
         for j in range(j_end):
-            img_bis[i_min,j_min+j]=np.array([255,255,255])
-            img_bis[i_min+i_end-1,j_min+j]=np.array([255,255,255])
+            img_bis[i_min,j_min+j]=patch_color
+            img_bis[i_min+i_end-1,j_min+j]=patch_color
 
     plt.figure(figsize=(6,6))
     plt.axes([0, 0, 1, 1])
